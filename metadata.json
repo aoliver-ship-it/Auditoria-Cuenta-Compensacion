@@ -1,0 +1,6 @@
+{
+  "name": "CCA - Auditoria Cuenta de Compensación (prototipo-1)",
+  "description": "Una aplicación web para la gestión de auditorías de cuentas de compensación y la revisión de información exógena. Cargue y analice archivos XML, declaraciones, extractos y soportes, utilizando la IA de Gemini para mejorar el análisis.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

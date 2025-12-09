@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CCA - Auditoria Cuenta de Compensación</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- highlight.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <!-- pdf.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs" type="module"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } 
+        
+        /* XML Viewer Global Scroll Control */
+        #xml-viewer {
+            font-family: 'JetBrains Mono', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            overflow: auto; /* General scrollbar */
+            white-space: nowrap; /* Force horizontal expansion */
+            height: 100%;
+        }
+
+        /* Line Wrapper */
+        .line-wrapper { 
+            display: flex; 
+            align-items: stretch; 
+            gap: 0; 
+            position: relative; 
+            cursor: pointer; 
+            transition: background-color 0.1s;
+            border-left: 4px solid transparent; 
+            width: max-content; 
+            min-width: 100%;
+        }
+        
+        .line-wrapper:hover { background-color: #f1f5f9; }
+        .line-wrapper.selected { background-color: #e0e7ff; } 
+        .line-wrapper.reviewed .line-content-area { background-color: #f0fdf4; }
+
+        /* Highlight Animation */
+        .line-wrapper.highlight-active-result { 
+            background-color: #fcd34d; 
+            border-left-color: #b45309; 
+            animation: flash-attention 60s ease-out forwards;
+            z-index: 10;
+        }
+        
+        /* High Contrast Text on Highlight */
+        .line-wrapper.highlight-active-result .line-content,
+        .line-wrapper.highlight-active-result .hljs-string,
+        .line-wrapper.highlight-active-result .hljs-attr,
+        .line-wrapper.highlight-active-result .hljs-name {
+            color: #000000 !important;
+            font-weight: 800;
+        }
+
+        @keyframes flash-attention {
+            0% { background-color: #f59e0b; transform: scale(1.005); }
+            5% { background-color: #fbbf24; transform: scale(1); }
+            100% { background-color: #fef3c7; border-left-color: #d97706; }
+        }
+
+        .line-number {
+            flex-shrink: 0;
+            width: 3.5rem;
+            text-align: right;
+            padding-right: 0.75rem;
+            padding-left: 0.5rem;
+            color: #94a3b8; 
+            background-color: #f8fafc; 
+            border-right: 1px solid #e2e8f0;
+            user-select: none;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+
+        .line-content-area {
+            flex-grow: 1;
+            padding-left: 0.75rem;
+            padding-right: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .hljs { background: transparent; padding: 0; }
+        .hljs-name, .hljs-tag { color: #2563eb; font-weight: 600; }
+        .hljs-attr { color: #059669; }
+        
+        /* Darker Values */
+        .hljs-string { 
+            color: #0f172a; /* Very Dark Slate */
+            font-weight: 700;
+        }
+
+        .main-record-line .line-content-area { background-color: #fafafa; }
+        .main-record-line .line-number { font-weight: bold; color: #64748b; }
+
+        .inline-comment { 
+            background-color: #fffbeb; border: 1px solid #fcd34d; color: #b45309; 
+            padding: 0.1rem 0.5rem; border-radius: 4px; font-family: 'Inter', sans-serif; 
+            font-size: 11px; display: flex; align-items: center; gap: 0.25rem;
+            white-space: pre-wrap; max-width: 400px;
+        }
+
+        .action-badge {
+            display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.1rem 0.4rem;
+            border-radius: 0.25rem; font-size: 10px; font-weight: 600; text-transform: uppercase;
+            cursor: pointer; margin-left: 0.5rem; white-space: nowrap;
+        }
+        .badge-pdf { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+        .badge-duplicate { background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
+        
+        .xml-checkbox { width: 15px; height: 15px; accent-color: #4f46e5; cursor: pointer; z-index: 6; position: sticky; left: 3.6rem; margin-right: 8px;}
+
+        ::-webkit-scrollbar { width: 10px; height: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 5px; border: 2px solid #f1f5f9; }
+        ::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #4f46e5; border-radius: 50%; width: 18px; height: 18px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@18.3.1/",
+    "react": "https://esm.sh/react@18.3.1",
+    "react-dom/": "https://esm.sh/react-dom@18.3.1/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.7.0",
+    "pdf-lib": "https://esm.sh/pdf-lib@^1.17.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="antialiased text-slate-800 h-screen flex flex-col overflow-hidden">
+    <div id="root" class="flex-grow h-full"></div>
+<script type="module" src="/index.tsx"></script>
+</body>
+</html>
